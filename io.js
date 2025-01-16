@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { spawn, execSync } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 
 class LuaIO {
     constructor() {
@@ -11,7 +11,6 @@ class LuaIO {
     }
 
     modeConvert(mode) {
-        // 遍历模式字符串，转换为 fs 模式
         let fsMode = fs.constants.O_RDONLY;
         for (let i = 0; i < mode.length; i++) {
             switch (mode[i]) {
@@ -63,7 +62,7 @@ class LuaIO {
     }
 
     read(handle, format, ...args) {
-        if (!this.fileHandles.has(handle)) return null;
+        if (!this.fileHandles.has(handle) && !this.processData.has(handle)) return null;
 
         const fd = this.fileHandles.get(handle);
         const buffer = Buffer.alloc(1024);
@@ -183,20 +182,14 @@ class LuaIO {
     popen(command, mode) {
         let data;
         try {
-            data = execSync(command).toString();
+            let process = spawnSync(command, [], { shell: true, encoding: 'utf8' });
+            data = process.stdout;
         } catch (err) {
             data = '';
-            // ignore "is not recognized" error
-            if (!err.message.includes('is not recognized')) {
-                console.error(err);
-            }
+            console.error(err);
         }
         const handle = this.nextHandle++;
-        this.fileHandles.set(handle, data);
-        this.processData.set(handle, {
-            stdout: data,
-            stderr: ''
-        });
+        this.processData.set(handle, { stdout: data });
         return handle;
     }
 }
@@ -240,7 +233,6 @@ exports('GetIoLib', () => {
             return luaIO.type(obj);
         },
         popen: (command, mode) => {
-            console.log('libpopen', command, mode);
             return luaIO.popen(command, mode);
         }
     }

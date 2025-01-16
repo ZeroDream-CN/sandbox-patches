@@ -15,7 +15,7 @@ function io.open(path, mode)
 
     function ioObj:read(mode)
         local data = ioLib.read(self.handle, mode)
-        if string.sub(data, 0, 4) == 'hex:' then
+        if data and string.sub(data, 0, 4) == 'hex:' then
             return hexdecode(string.sub(data, 5))
         end
         return data
@@ -113,7 +113,7 @@ function io.popen(cmd, mode)
 
     function ioObj:read(mode)
         local data = ioLib.read(self.handle, mode)
-        if string.sub(data, 0, 4) == 'hex:' then
+        if data and string.sub(data, 0, 4) == 'hex:' then
             return hexdecode(string.sub(data, 5))
         end
         return data
